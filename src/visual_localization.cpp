@@ -1,13 +1,9 @@
-
 #include <opencv2/opencv.hpp>
-//#include <opencv2/tracking.hpp>
 #include <iostream>
 #include <sstream>
 
 #include "BOOSTING/trackerAdaBoosting.hpp"
 #include "BOOSTING/roiSelector.hpp"
-
-//#include "roiSelector.hpp" // VISUAL_LOCALIZATION::selectROI
 
 using namespace std;
 using namespace cv;
@@ -29,7 +25,6 @@ static void help()
        "\tp - pause/start video\n";
 }
 
-//cv::Ptr<cv::Tracker> createTrackerByName(const std::string &name);
 bool updateROI(cv::Mat &img, cv::Ptr<BOOSTING::Tracker> &tracker, cv::Rect2d &roi);
 bool getNextImage(cv::Mat &img, cv::VideoCapture &cap);
 
@@ -40,16 +35,14 @@ int main( int argc, char** argv ){
         help();
         return 0;
     }
-    std::string algorithm;
     bool useCamera;
     int device;
     std::string video_name;
-    if(!parser.has("algorithm") || !parser.has("useCamera"))
+    if(!parser.has("useCamera"))
     {
         help();
         return 0;
     }
-    algorithm = parser.get<std::string>("algorithm");
     useCamera = parser.get<bool>("useCamera");
     if(useCamera){
         if(!parser.has("d")){
@@ -85,10 +78,9 @@ int main( int argc, char** argv ){
     }
 
     // instantiates the specific Tracker
-    //cv::Ptr<cv::Tracker> tracker = createTrackerByName(algorithm);
     cv::Ptr<BOOSTING::Tracker> tracker = BOOSTING::TrackerBoosting::create();
     if(tracker == NULL){
-        std::cout << "\nError in the instantiation of the tracker by method: " << algorithm << std::endl;
+        std::cout << "\nError in the instantiation of the tracker" << std::endl;
         return -1;
     }
     cv::Mat image;
@@ -128,31 +120,6 @@ int main( int argc, char** argv ){
 
     return 0;
 }
-
-/*
-cv::Ptr<cv::Tracker> createTrackerByName(const std::string &name)
-{
-    cv::Ptr<cv::Tracker> tracker;
-
-    if (name == "KCF")
-        tracker = cv::TrackerKCF::create();
-    else if (name == "TLD")
-        tracker = cv::TrackerTLD::create();
-    else if (name == "BOOSTING")
-        tracker = cv::TrackerBoosting::create();
-    else if (name == "MEDIAN_FLOW")
-        tracker = cv::TrackerMedianFlow::create();
-    else if (name == "MIL")
-        tracker = cv::TrackerMIL::create();
-    else if (name == "GOTURN")
-        tracker = cv::TrackerGOTURN::create();
-    else
-        CV_Error(cv::Error::StsBadArg, "Invalid tracking algorithm name\n");
-
-    return tracker;
-}
-*/
-
 
 /* Read image, if success return ture
 */
