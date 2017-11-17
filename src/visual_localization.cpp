@@ -5,6 +5,9 @@
 #include "BOOSTING/trackerAdaBoosting.hpp"
 #include "BOOSTING/roiSelector.hpp"
 
+#include "ros/ros.h"
+#include "ros_visual_localization/pose.h" // generated from msg/pose.msg
+
 using namespace std;
 using namespace cv;
 
@@ -29,6 +32,9 @@ bool updateROI(cv::Mat &img, cv::Ptr<BOOSTING::Tracker> &tracker, cv::Rect2d &ro
 bool getNextImage(cv::Mat &img, cv::VideoCapture &cap);
 
 int main( int argc, char** argv ){
+    ros::init(argc, argv, "visual_localization");
+    ros::NodeHandle nh;
+    ros::Publisher pose_pub = nh.advertise<ros_visual_localization::pose>("pose_from_vl", 1);
 
     cv::CommandLineParser parser( argc, argv, keys );
     if(parser.has("help") || parser.has("h") || parser.has("usage") || parser.has("?")){
@@ -94,30 +100,43 @@ int main( int argc, char** argv ){
     bool tracker_initialized = false;
     bool pause_tracker = false;
 
-    do{
-        if(!pause_tracker)
-        {
-            if(!tracker_initialized){
-                // initialize the tracker
-                if(!tracker->init(image, roi))
-                {
-                    std::cout << "\n Could not initialize the tracker... \n";
-                    return -1;
+    ros::Rate loop_rate(5);
+
+    while(ros::ok())
+    {
+        ros_visual_localization::pose pose_msg;
+        do{
+            if(!pause_tracker)
+            {
+                if(!tracker_initialized){
+                    // initialize the tracker
+                    if(!tracker->init(image, roi))
+                    {
+                        std::cout << "\n Could not initialize the tracker... \n";
+                        return -1;
+                    }
+                    tracker_initialized = true;
+                    continue;
                 }
-                tracker_initialized = true;
-                continue;
+                if(updateROI(image, tracker, roi)){
+                    pose_msg.x = roi.x + roi.width / 2;
+                    pose_msg.y = roi.y + roi.height / 2;
+                    pose_msg.theta = 0;
+                    pose_pub.publish(pose_msg);
+                }
+                cv::imshow("visual_localization", image);
             }
-            updateROI(image, tracker, roi);
-            cv::imshow("visual_localization", image);
-        }
-        char c = (char)cv::waitKey(2);
-        if(c == 'q')
-            break;
-        if(c == 'p')
-            pause_tracker = !pause_tracker;
+            char c = (char)cv::waitKey(2);
+            if(c == 'q')
+                break;
+            if(c == 'p')
+                pause_tracker = !pause_tracker;
 
-    }while(getNextImage(image, cap));
+        }while(getNextImage(image, cap));
 
+        ros::spinOnce();
+        loop_rate.sleep();
+    }
     return 0;
 }
 
