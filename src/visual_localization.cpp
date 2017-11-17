@@ -18,12 +18,20 @@ static const char* keys =
 {   "{help h usage ?    | | print usage message}"
     "{useCamera         | | choose Camera or video}"
     "{d                 | | Camera device number}"
-    "{v                 | | video name        }"};
+    "{v                 | | video name        }"
+    "{r                 |5| ros rate}"};
 
 static void help()
 {
-    std::cout << "\n use example: ./visual_localization -useCamera=true -d=1\n"
-                 "\n use example: ./visual_localization -useCamera=false -v=xx.avi\n"
+    std::cout << "parameters: \n"
+                 "{help h usage ?    | | print usage message}\n"
+                 "{useCamera         | | choose Camera or video}\n"
+                 "{d                 | | Camera device number}\n"
+                 "{v                 | | video name        }\n"
+                 "{r                 |5| ros rate}\n\n";
+
+    std::cout << "\n use example: ./visual_localization -useCamera=true -d=1 -r=5\n"
+                 "\n use example: ./visual_localization -useCamera=false -v=xx.avi -r=5\n"
                  << std::endl;
 
     std::cout << "\n\nHot keys: \n"
@@ -33,6 +41,12 @@ static void help()
 
 bool updateROI(cv::Mat &img, cv::Ptr<BOOSTING::Tracker> &tracker, cv::Rect2d &roi);
 bool getNextImage(cv::Mat &img, cv::VideoCapture &cap);
+void createImage(const cv::Mat &image, const std_msgs::Header &header, sensor_msgs::Image &msgImage);
+void publishImage( const std_msgs::Header &header, 
+                   const cv::Mat &image, 
+                   const ros::Publisher &imagePub);
+void createHeader(std_msgs::Header& header);
+
 
 int main( int argc, char** argv ){
     ros::init(argc, argv, "visual_localization");
@@ -104,7 +118,8 @@ int main( int argc, char** argv ){
     bool tracker_initialized = false;
     bool pause_tracker = false;
 
-    ros::Rate loop_rate(5);
+    int ros_rate = parser.get<int>("r");
+    ros::Rate loop_rate(ros_rate);
 
     while(ros::ok())
     {
@@ -130,7 +145,7 @@ int main( int argc, char** argv ){
                     pose_msg.theta = 0;
                     posePub.publish(pose_msg);
                 }
-                cv::imshow("visual_localization", image);
+                //cv::imshow("visual_localization", image);
             }
             char c = (char)cv::waitKey(2);
             if(c == 'q')
@@ -138,14 +153,15 @@ int main( int argc, char** argv ){
             if(c == 'p')
                 pause_tracker = !pause_tracker;
 
-            createHeader(header, cameraName, counter);
-            publishImages(header, image, imagePub);
+            createHeader(header);
+            publishImage(header, image, imagePub);
 
         }while(getNextImage(image, cap));
 
         ros::spinOnce();
         loop_rate.sleep();
     }
+    cv::destroyAllWindows();
     return 0;
 }
 
