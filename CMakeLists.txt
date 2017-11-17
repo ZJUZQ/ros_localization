@@ -126,6 +126,7 @@ include_directories(
 )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 include_directories( /home/vortex/3rdparty/include )
+link_directories( /home/vortex/3rdparty/lib )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}

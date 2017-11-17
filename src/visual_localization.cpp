@@ -5,8 +5,11 @@
 #include "BOOSTING/trackerAdaBoosting.hpp"
 #include "BOOSTING/roiSelector.hpp"
 
-#include "ros/ros.h"
+#include <ros/ros.h>
 #include "ros_visual_localization/pose.h" // generated from msg/pose.msg
+#include <sensor_msgs/Image.h>
+#include <sensor_msgs/image_encodings.h>
+#include <cv_bridge/cv_bridge.h>
 
 using namespace std;
 using namespace cv;
@@ -34,7 +37,8 @@ bool getNextImage(cv::Mat &img, cv::VideoCapture &cap);
 int main( int argc, char** argv ){
     ros::init(argc, argv, "visual_localization");
     ros::NodeHandle nh;
-    ros::Publisher pose_pub = nh.advertise<ros_visual_localization::pose>("pose_from_vl", 1);
+    ros::Publisher posePub = nh.advertise<ros_visual_localization::pose>("pose_from_vl", 1);
+    ros::Publisher imagePub = nh.advertise<sensor_msgs::Image>("image_from_vl", 1);
 
     cv::CommandLineParser parser( argc, argv, keys );
     if(parser.has("help") || parser.has("h") || parser.has("usage") || parser.has("?")){
@@ -105,6 +109,8 @@ int main( int argc, char** argv ){
     while(ros::ok())
     {
         ros_visual_localization::pose pose_msg;
+        std_msgs::Header header;
+
         do{
             if(!pause_tracker)
             {
@@ -122,7 +128,7 @@ int main( int argc, char** argv ){
                     pose_msg.x = roi.x + roi.width / 2;
                     pose_msg.y = roi.y + roi.height / 2;
                     pose_msg.theta = 0;
-                    pose_pub.publish(pose_msg);
+                    posePub.publish(pose_msg);
                 }
                 cv::imshow("visual_localization", image);
             }
@@ -132,12 +138,23 @@ int main( int argc, char** argv ){
             if(c == 'p')
                 pause_tracker = !pause_tracker;
 
+            createHeader(header, cameraName, counter);
+            publishImages(header, image, imagePub);
+
         }while(getNextImage(image, cap));
 
         ros::spinOnce();
         loop_rate.sleep();
     }
     return 0;
+}
+
+
+void createHeader(std_msgs::Header& header)
+{
+    //header.seq = xx;
+    header.stamp = ros::Time::now();
+    //header.frame_id = xx;
 }
 
 /* Read image, if success return ture
@@ -164,4 +181,31 @@ bool updateROI(cv::Mat &img, cv::Ptr<BOOSTING::Tracker> &tracker, cv::Rect2d &ro
     }
     else
         return false;
+}
+
+void publishImage( const std_msgs::Header &header, 
+                   const cv::Mat &image, 
+                   const ros::Publisher &imagePub)
+{
+    sensor_msgs::Image imageMsg;
+    createImage(image, header, imageMsg);
+    imagePub.publish(imageMsg);
+}
+
+// input image, output msgImage
+void createImage(const cv::Mat &image, const std_msgs::Header &header, sensor_msgs::Image &msgImage)
+{
+    size_t step, size;
+    step = image.cols * image.elemSize();
+    size = image.rows * step;
+
+    msgImage.encoding = sensor_msgs::image_encodings::BGR8;
+
+    msgImage.header = header;
+    msgImage.height = image.rows;
+    msgImage.width = image.cols;
+    msgImage.is_bigendian = false;
+    msgImage.step = step;
+    msgImage.data.resize(size); // uint8[] data
+    memcpy(msgImage.data.data(), image.data, size);
 }
