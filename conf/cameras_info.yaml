@@ -1,0 +1,13 @@
+
+cameras:
+  - type: "usb"   # for usb camera
+    id: "usb_0"
+    device: 1
+    intrinsic: "usb_0_intrinsic.yaml"
+
+# Checkerboard parameters
+checkerboard:
+  rows: 6
+  cols: 5
+  cell_width: 0.12
+  cell_height: 0.12

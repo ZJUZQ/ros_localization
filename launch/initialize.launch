@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="launchers_dir"   default="$(find ros_visual_localization)/launch" />
+  <arg name="cameras_info" default="$(find ros_visual_localization)/conf/cameras_info.yaml" />
+
+  <!-- Launching initializer -->
+  <!-- Make sure to: chmod +x initializer.py -->
+  <node pkg="ros_visual_localization" type="initializer.py" name="initializer" output="screen" required="true">
+        
+    <param name="launchers_dir"   value="$(arg launchers_dir)" />
+    <rosparam command="load"  file="$(arg cameras_info)" />
+  </node>
+
+</launch>

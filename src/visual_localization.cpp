@@ -4,6 +4,7 @@
 
 #include "BOOSTING/trackerAdaBoosting.hpp"
 #include "BOOSTING/roiSelector.hpp"
+#include "usbCamera.hpp"
 
 #include <ros/ros.h>
 #include "ros_visual_localization/pose.h" // generated from msg/pose.msg
