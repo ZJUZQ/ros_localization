@@ -36,7 +36,7 @@ namespace video_usbCam
                 return false;
             return true;
         }
-        
+
         bool init(int device, cv::Mat cameraMatrix, cv::Mat distCoeffs){
             _device = device;
             _cameraMatrix = cameraMatrix;
@@ -68,6 +68,9 @@ namespace video_usbCam
         void rectifyImage(cv::Mat &img){
             cv::Mat originImg = img.clone();
             cv::undistort(originImg, img, _cameraMatrix, _distCoeffs);
+        }
+        void releaseCap(){
+            _cap.release();
         }
     };
 

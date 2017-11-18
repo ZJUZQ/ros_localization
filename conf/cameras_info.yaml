@@ -12,8 +12,8 @@ cameras:
 # Checkerboard parameters
 checkerboard:
   rows: 6
-  cols: 5
-  cell_width: 0.12
-  cell_height: 0.12
+  cols: 9
+  cell_width: 0.082
+  cell_height: 0.082
 
-rosRate: 5 # rate for posePub and imagePub
+rosRate: 2 # rate for posePub and imagePub

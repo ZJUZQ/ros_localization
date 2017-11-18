@@ -52,20 +52,22 @@ class Initializer :
           file.close()
           rospy.logerr('Missing "device" field for the usb camera!')
         file.write('  <arg name="camera_device"   default="' + str(camera['device']) + '" />\n\n')
-      file.write('  <arg name="intrinsic"   default="$(find ros_visual_localization)/conf/' + camera['intrinsic'] + '" />\n\n') 
+      file.write('  <arg name="intrinsic"   default="' + camera['intrinsic'] + '" />\n\n') 
       file.write('  <arg name="rosRate"   default="' + str(rosRate) + '" />\n\n') 
 
       file.write('  <!-- Launching camera -->\n')
       if camera['type'] == 'usb':
         file.write('  <node pkg="ros_visual_localization" type="visual_localization" name="' + camera['id'] + '" output="screen">\n\n')
-        file.write('    <param name="camera_device"       value="${arg camera_device}" />\n')
+        file.write('    <param name="camera_device"       value="$(arg camera_device)" />\n')
         file.write('    <param name="camera_type"           value="usb" />\n')
 
       #if camera['type'] == 'ip':
-      #  file.write('  <node pkg="ros_visual_localization" type="ipCamera" name="${arg camera_name}" output="screen">\n\n')
+      #  file.write('  <node pkg="ros_visual_localization" type="ipCamera" name="$(arg camera_name)" output="screen">\n\n')
       #  file.write('    <param name="${arg camera_name} + "/ip"         value="' + str(camera.ip) + '" />\n')
-      file.write('    <param name="camera_name"           value="${arg camera_name}" />\n')
-      file.write('    <param name="intrinsic"             value="${arg intrinsic}" />\n')
+      file.write('    <param name="camera_name"           value="$(arg camera_name)" />\n')
+      #file.write('    <rosparam file="$(find ros_visual_localization)/conf/$(arg intrinsic)" command="load" />\n\n')
+
+      file.write('    <param name="intrinsic"             value="$(find ros_visual_localization)/conf/$(arg intrinsic)" />\n')
 
       file.write('    <param name="rows"                  value="$(arg rows)" />\n')
       file.write('    <param name="cols"                  value="$(arg cols)" />\n')
@@ -73,7 +75,6 @@ class Initializer :
       file.write('    <param name="cell_height"           value="$(arg cell_height)" />\n\n')
       file.write('    <param name="rosRate"           value="$(arg rosRate)" />\n\n')
 
-      file.write('    <rosparam command="load"            file="$(arg intrinsic" />\n\n')
 
 
       file.write('  </node>\n\n')

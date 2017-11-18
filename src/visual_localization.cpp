@@ -52,7 +52,7 @@ void createHeader(std_msgs::Header& header);
 
 int main( int argc, char** argv ){
     ros::init(argc, argv, "visual_localization");
-    ros::NodeHandle nh;   
+    ros::NodeHandle nh("~");   
     /*
     cv::CommandLineParser parser( argc, argv, keys );
     if(parser.has("help") || parser.has("h") || parser.has("usage") || parser.has("?")){
@@ -113,6 +113,7 @@ int main( int argc, char** argv ){
         return -1;
     }
     roi = BOOSTING::selectROI("visual_localization", image);
+    std::cout << "debug: 1" << std::endl;
 
     bool tracker_initialized = false;
     bool pause_tracker = false;
@@ -150,7 +151,7 @@ int main( int argc, char** argv ){
                     pose_msg.theta = 0;
                     posePub.publish(pose_msg);
                 }
-                //cv::imshow("visual_localization", image);
+                cv::imshow("visual_localization", image);
             }
             char c = (char)cv::waitKey(2);
             if(c == 'q')
@@ -166,6 +167,7 @@ int main( int argc, char** argv ){
         ros::spinOnce();
         loop_rate.sleep();
     }
+    cam.releaseCap();
     cv::destroyAllWindows();
     return 0;
 }
