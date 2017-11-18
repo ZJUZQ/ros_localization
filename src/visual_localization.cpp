@@ -4,7 +4,7 @@
 
 #include "BOOSTING/trackerAdaBoosting.hpp"
 #include "BOOSTING/roiSelector.hpp"
-#include "usbCamera.hpp"
+#include "video_ucam_Cap.hpp" // for usb camera and video
 
 #include <ros/ros.h>
 #include "ros_visual_localization/pose.h" // generated from msg/pose.msg
@@ -15,6 +15,7 @@
 using namespace std;
 using namespace cv;
 
+/*
 static const char* keys =
 {   "{help h usage ?    | | print usage message}"
     "{useCamera         | | choose Camera or video}"
@@ -39,9 +40,9 @@ static void help()
        "\tq - quit the program\n"
        "\tp - pause/start video\n";
 }
+*/
 
 bool updateROI(cv::Mat &img, cv::Ptr<BOOSTING::Tracker> &tracker, cv::Rect2d &roi);
-bool getNextImage(cv::Mat &img, cv::VideoCapture &cap);
 void createImage(const cv::Mat &image, const std_msgs::Header &header, sensor_msgs::Image &msgImage);
 void publishImage( const std_msgs::Header &header, 
                    const cv::Mat &image, 
@@ -51,55 +52,48 @@ void createHeader(std_msgs::Header& header);
 
 int main( int argc, char** argv ){
     ros::init(argc, argv, "visual_localization");
-    ros::NodeHandle nh;
-    ros::Publisher posePub = nh.advertise<ros_visual_localization::pose>("pose_from_vl", 1);
-    ros::Publisher imagePub = nh.advertise<sensor_msgs::Image>("image_from_vl", 1);
-
+    ros::NodeHandle nh;   
+    /*
     cv::CommandLineParser parser( argc, argv, keys );
     if(parser.has("help") || parser.has("h") || parser.has("usage") || parser.has("?")){
         help();
         return 0;
     }
-    bool useCamera;
-    int device;
-    std::string video_name;
-    if(!parser.has("useCamera"))
+    */
+    std::string intrinsic_file;
+    nh.getParam("intrinsic", intrinsic_file);
+    cv::FileStorage fs;
+    fs.open(intrinsic_file, cv::FileStorage::READ);
+    if (!fs.isOpened())
     {
-        help();
-        return 0;
+      std::cerr << "failed to open " << intrinsic_file << std::endl;
+      return 1;
     }
-    useCamera = parser.get<bool>("useCamera");
-    if(useCamera){
-        if(!parser.has("d")){
-            help();
-            return 0;
-        }
-        device = parser.get<int>("d");
-    }    
-    else
+    cv::Mat cameraMatrix, distCoeffs;
+    fs["Camera_Matrix"] >> cameraMatrix;
+    fs["Distortion_Coefficients"] >> distCoeffs;
+    fs.release();
+
+    video_usbCam::video_usbCam cam;
+    std::string camera_type;
+    nh.getParam("camera_type", camera_type);
+    if(camera_type == "usb")
     {
-        if(!parser.has("v")){
-            help();
-            return 0;
+        int device = -1;
+        nh.getParam("camera_device", device);
+        if(!cam.init(device, cameraMatrix, distCoeffs)){
+            std::cout << "ERROR! Unable to open camera device: " << device << std::endl;
+            return -1;
         }
-        video_name = parser.get<std::string>("v");
     }
-
-    cv::VideoCapture cap;
-    if(useCamera)
-        cap.open(device);
-    else 
-        cap.open(video_name);
-
-    if(!cap.isOpened()){
-        std::stringstream ss;
-        if(useCamera)
-            ss << "ERROR! Unable to open camera device: " << device;
-        else
-            ss << "ERROR! Unable to open Video: " << video_name;
-        std::cout << ss.str() << std::endl;
-        help();
-        return 0;
+    else if(camera_type == "video")
+    {
+        std::string video_name;
+        nh.getParam("video_name", video_name);
+        if(!cam.init(video_name, cameraMatrix, distCoeffs)){
+            std::cout << "ERROR! Unable to open Video: " << video_name << std::endl;
+            return -1;
+        }
     }
 
     // instantiates the specific Tracker
@@ -110,17 +104,27 @@ int main( int argc, char** argv ){
     }
     cv::Mat image;
     cv::Rect2d roi;
-    cv::namedWindow("visual_localization", 1);
+    cv::namedWindow("visual_localization", 0);
 
     // initialize the roi of tracking object
-    if(getNextImage(image, cap))
-        roi = BOOSTING::selectROI("visual_localization", image);
+    if(!cam.getNextRectifiedImage(image))
+    {
+        std::cout << "ERROR! failed to read image" << std::endl;
+        return -1;
+    }
+    roi = BOOSTING::selectROI("visual_localization", image);
 
     bool tracker_initialized = false;
     bool pause_tracker = false;
 
-    int ros_rate = parser.get<int>("r");
-    ros::Rate loop_rate(ros_rate);
+    std::string camera_name;
+    nh.getParam("camera_name", camera_name);
+    ros::Publisher posePub = nh.advertise<ros_visual_localization::pose>("pose_" + camera_name, 1);
+    ros::Publisher imagePub = nh.advertise<sensor_msgs::Image>("image_" + camera_name, 1);
+
+    int rosRate;
+    nh.getParam("rosRate", rosRate);
+    ros::Rate loop_rate(rosRate);
 
     while(ros::ok())
     {
@@ -157,7 +161,7 @@ int main( int argc, char** argv ){
             createHeader(header);
             publishImage(header, image, imagePub);
 
-        }while(getNextImage(image, cap));
+        }while(cam.getNextRectifiedImage(image));
 
         ros::spinOnce();
         loop_rate.sleep();
@@ -166,16 +170,7 @@ int main( int argc, char** argv ){
     return 0;
 }
 
-
-void createHeader(std_msgs::Header& header)
-{
-    //header.seq = xx;
-    header.stamp = ros::Time::now();
-    //header.frame_id = xx;
-}
-
-/* Read image, if success return ture
-*/
+/*
 bool getNextImage(cv::Mat &img, cv::VideoCapture &cap)
 {
     cap.read(img);
@@ -186,6 +181,17 @@ bool getNextImage(cv::Mat &img, cv::VideoCapture &cap)
     }
     return true;
 }
+
+bool getNextImage(cv::Mat &image, usbCamera::usbCamera ucam)
+{
+    if(!ucam.getNextImage(image)){
+        std::cout << "\n blank image grabbed!\n";
+        return false;
+    }
+    ucam.rectifyImage(image);
+    return true;
+}
+*/
 
 /*  update localizatin roi
 */
@@ -198,6 +204,13 @@ bool updateROI(cv::Mat &img, cv::Ptr<BOOSTING::Tracker> &tracker, cv::Rect2d &ro
     }
     else
         return false;
+}
+
+void createHeader(std_msgs::Header& header)
+{
+    //header.seq = xx;
+    header.stamp = ros::Time::now();
+    //header.frame_id = xx;
 }
 
 void publishImage( const std_msgs::Header &header, 

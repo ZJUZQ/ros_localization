@@ -1,15 +1,15 @@
-#ifndef USBCAMERA_DEFINE_HPP
-#define USBCAMERA_DEFINE_HPP
+#ifndef VIDEOCAP_DEFINE_HPP
+#define VIDEOCAP_DEFINE_HPP
 
 #include <opencv2/opencv.hpp>
 #include <iostream>
 
-namespace usbCamera
+namespace videoCap
 {
-    class usbCamera
+    class videoCap
     {
     private:
-        int _device;    // camera device number
+        std::string _vfile;    // camera device number
         cv::VideoCapture _cap;
         cv::Mat _cameraMatrix;
         cv::Mat _distCoeffs;
@@ -17,16 +17,16 @@ namespace usbCamera
     public:
         //cv::Mat _image; 
 
-        usbCamera(){
-            _device = -1;
+        videoCap(){
+            _vfile = "";
         }
 
         /* initialization */
-        bool init(int device, cv::Mat cameraMatrix, cv::Mat distCoeffs){
-            _device = device;
+        bool init(const std::string vfile, cv::Mat cameraMatrix, cv::Mat distCoeffs){
+            _vfile = vfile;
             _cameraMatrix = cameraMatrix;
             _distCoeffs = distCoeffs;
-            _cap.open(_device);
+            _cap.open(_vfile);
             _cap.set(cv::CAP_PROP_FRAME_WIDTH, 960);
             _cap.set(cv::CAP_PROP_FRAME_HEIGHT, 720);
             if(!_cap.isOpened())
@@ -40,7 +40,7 @@ namespace usbCamera
                 return false;
             return true;
         }
-
+        
         bool getNextRectifiedImage(cv::Mat &img){
             _cap.read(img);
             if(img.empty())

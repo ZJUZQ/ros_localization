@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- SESSION ID: 1510981874 -->
+<!-- SESSION ID: 1510982379 -->
 <launch>
 
   <!-- Checkerboard parameters -->
@@ -18,6 +18,7 @@
   <node pkg="ros_visual_localization" type="visual_localization" name="usb_0" output="screen">
 
     <param name="camera_device"       value="${arg camera_device}" />
+    <param name="camera_type"           value="usb" />
     <param name="camera_name"           value="${arg camera_name}" />
     <param name="intrinsic"             value="${arg intrinsic}" />
     <param name="rows"                  value="$(arg rows)" />

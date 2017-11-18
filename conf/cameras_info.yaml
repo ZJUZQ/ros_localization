@@ -3,7 +3,11 @@ cameras:
   - type: "usb"   # for usb camera
     id: "usb_0"
     device: 1
-    intrinsic: "usb_0_intrinsic.yaml"
+    intrinsic: "usb_0_intrinsic.xml"
+  #- type: "video"
+  #  id: "video_0"
+  #  vfile: xx.avi
+  #  intrinsic: "video_0_intrinsic.xml" 
 
 # Checkerboard parameters
 checkerboard:
@@ -11,3 +15,5 @@ checkerboard:
   cols: 5
   cell_width: 0.12
   cell_height: 0.12
+
+rosRate: 5 # rate for posePub and imagePub
