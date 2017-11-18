@@ -1,10 +1,10 @@
 ### Install
 
-git clone https://github.com/ZJUZQ/BOOSTING_lib.git
+git clone https://github.com/ZJUZQ/ros_visual_localization.git
 
-cd BOOSTING_lib
+cd ros_visual_localization/scripts
 
-chmod +x build.sh
+chmod +x install.sh
 
-./build.sh
+./install.sh
 

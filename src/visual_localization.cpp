@@ -127,12 +127,12 @@ int main( int argc, char** argv ){
     nh.getParam("rosRate", rosRate);
     ros::Rate loop_rate(rosRate);
 
+    ros_visual_localization::pose pose_msg;
+    std_msgs::Header header;
     while(ros::ok())
     {
-        ros_visual_localization::pose pose_msg;
-        std_msgs::Header header;
-
-        do{
+        if(cam.getNextRectifiedImage(image))
+        {
             if(!pause_tracker)
             {
                 if(!tracker_initialized){
@@ -143,26 +143,23 @@ int main( int argc, char** argv ){
                         return -1;
                     }
                     tracker_initialized = true;
-                    continue;
                 }
                 if(updateROI(image, tracker, roi)){
                     pose_msg.x = roi.x + roi.width / 2;
                     pose_msg.y = roi.y + roi.height / 2;
                     pose_msg.theta = 0;
                     posePub.publish(pose_msg);
-                }
-                cv::imshow("visual_localization", image);
+                }  
             }
-            char c = (char)cv::waitKey(2);
-            if(c == 'q')
-                break;
-            if(c == 'p')
-                pause_tracker = !pause_tracker;
-
             createHeader(header);
             publishImage(header, image, imagePub);
-
-        }while(cam.getNextRectifiedImage(image));
+            cv::imshow("visual_localization", image);
+        }
+        char c = (char)cv::waitKey(2);
+        if(c == 'q')
+            break;
+        if(c == 'p')
+            pause_tracker = !pause_tracker;
 
         ros::spinOnce();
         loop_rate.sleep();
