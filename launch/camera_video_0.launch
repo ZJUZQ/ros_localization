@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!-- SESSION ID: 1512062038 -->
+<launch>
+
+  <!-- Checkerboard parameters -->
+  <arg name="rows"          default="6" />
+  <arg name="cols"          default="9" />
+  <arg name="cell_width"    default="0.082" />
+  <arg name="cell_height"   default="0.082" />
+
+  <!-- Camera parameters -->
+  <arg name="camera_name"     default="video_0" />
+  <arg name="video_file"   default="climber.wmv" />
+
+  <arg name="intrinsic"   default="video_0_intrinsic.xml" />
+
+  <arg name="rectify"   default="0" />
+
+  <arg name="rosRate"   default="5" />
+
+  <!-- Launching camera -->
+  <node pkg="ros_visual_localization" type="visual_localization" name="video_0" output="screen">
+
+    <param name="video_file"       value="$(find ros_visual_localization)/video/$(arg video_file)" />
+    <param name="camera_type"           value="video" />
+    <param name="camera_name"           value="$(arg camera_name)" />
+    <param name="intrinsic"             value="$(find ros_visual_localization)/conf/$(arg intrinsic)" />
+    <param name="rectify"             value="$(arg rectify)" />
+    <param name="rows"                  value="$(arg rows)" />
+    <param name="cols"                  value="$(arg cols)" />
+    <param name="cell_width"            value="$(arg cell_width)" />
+    <param name="cell_height"           value="$(arg cell_height)" />
+
+    <param name="rosRate"           value="$(arg rosRate)" />
+
+  </node>
+
+</launch>

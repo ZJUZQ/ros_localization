@@ -47,12 +47,20 @@ class Initializer :
       #    file.close()
       #    rospy.logerr('Missing "ip" field for the ip camera!')
       #  file.write('  <arg name="camera_ip"   default="' + camera['ip'] + '" />\n\n')
-      if camera['type'] == 'usb': # for ip camera  
+      
+      if camera['type'] == 'usb': # for usb camera  
         if camera['device'] == '':
           file.close()
           rospy.logerr('Missing "device" field for the usb camera!')
         file.write('  <arg name="camera_device"   default="' + str(camera['device']) + '" />\n\n')
+      if camera['type'] == 'video': # for video  
+        if camera['vfile'] == '':
+          file.close()
+          rospy.logerr('Missing "vfile" field for the video file name!')
+        file.write('  <arg name="video_file"   default="' + str(camera['vfile']) + '" />\n\n')
+    
       file.write('  <arg name="intrinsic"   default="' + camera['intrinsic'] + '" />\n\n') 
+      file.write('  <arg name="rectify"   default="' + str(camera['rectify']) + '" />\n\n')
       file.write('  <arg name="rosRate"   default="' + str(rosRate) + '" />\n\n') 
 
       file.write('  <!-- Launching camera -->\n')
@@ -60,6 +68,10 @@ class Initializer :
         file.write('  <node pkg="ros_visual_localization" type="visual_localization" name="' + camera['id'] + '" output="screen">\n\n')
         file.write('    <param name="camera_device"       value="$(arg camera_device)" />\n')
         file.write('    <param name="camera_type"           value="usb" />\n')
+      if camera['type'] == 'video':
+        file.write('  <node pkg="ros_visual_localization" type="visual_localization" name="' + camera['id'] + '" output="screen">\n\n')
+        file.write('    <param name="video_file"       value="$(find ros_visual_localization)/video/$(arg video_file)" />\n')
+        file.write('    <param name="camera_type"           value="video" />\n')
 
       #if camera['type'] == 'ip':
       #  file.write('  <node pkg="ros_visual_localization" type="ipCamera" name="$(arg camera_name)" output="screen">\n\n')
@@ -68,13 +80,13 @@ class Initializer :
       #file.write('    <rosparam file="$(find ros_visual_localization)/conf/$(arg intrinsic)" command="load" />\n\n')
 
       file.write('    <param name="intrinsic"             value="$(find ros_visual_localization)/conf/$(arg intrinsic)" />\n')
+      file.write('    <param name="rectify"             value="$(arg rectify)" />\n')
 
       file.write('    <param name="rows"                  value="$(arg rows)" />\n')
       file.write('    <param name="cols"                  value="$(arg cols)" />\n')
       file.write('    <param name="cell_width"            value="$(arg cell_width)" />\n')
       file.write('    <param name="cell_height"           value="$(arg cell_height)" />\n\n')
       file.write('    <param name="rosRate"           value="$(arg rosRate)" />\n\n')
-
 
 
       file.write('  </node>\n\n')

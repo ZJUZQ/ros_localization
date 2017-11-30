@@ -4,10 +4,13 @@ cameras:
     id: "usb_0"
     device: 1
     intrinsic: "usb_0_intrinsic.xml"
-  #- type: "video"
-  #  id: "video_0"
-  #  vfile: xx.avi
-  #  intrinsic: "video_0_intrinsic.xml" 
+    rectify: 0 # whether rectify the image
+
+  - type: "video"
+    id: "video_0"
+    vfile: "climber.wmv" # put the video in /video/
+    intrinsic: "video_0_intrinsic.xml" 
+    rectify: 0 # whether rectify the image
 
 # Checkerboard parameters
 checkerboard:
@@ -16,4 +19,4 @@ checkerboard:
   cell_width: 0.082
   cell_height: 0.082
 
-rosRate: 2 # rate for posePub and imagePub
+rosRate: 5 # rate for posePub and imagePub

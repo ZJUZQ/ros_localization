@@ -61,18 +61,27 @@ int main( int argc, char** argv ){
     }
     */
     std::string intrinsic_file;
-    nh.getParam("intrinsic", intrinsic_file);
-    cv::FileStorage fs;
-    fs.open(intrinsic_file, cv::FileStorage::READ);
-    if (!fs.isOpened())
-    {
-      std::cerr << "failed to open " << intrinsic_file << std::endl;
-      return 1;
-    }
     cv::Mat cameraMatrix, distCoeffs;
-    fs["Camera_Matrix"] >> cameraMatrix;
-    fs["Distortion_Coefficients"] >> distCoeffs;
-    fs.release();
+    int rectify = 1;
+    nh.getParam("rectify", rectify);
+    std::cout << "debug: rectify = " << rectify << std::endl;
+
+    if(rectify) // when read image, need to rectify the image
+    {
+        nh.getParam("intrinsic", intrinsic_file);
+
+        cv::FileStorage fs;
+        fs.open(intrinsic_file, cv::FileStorage::READ);
+        if (!fs.isOpened())
+        {
+          std::cerr << "failed to open " << intrinsic_file << std::endl;
+          return 1;
+        }
+
+        fs["Camera_Matrix"] >> cameraMatrix;
+        fs["Distortion_Coefficients"] >> distCoeffs;
+        fs.release();
+    }
 
     video_usbCam::video_usbCam cam;
     std::string camera_type;
@@ -88,10 +97,10 @@ int main( int argc, char** argv ){
     }
     else if(camera_type == "video")
     {
-        std::string video_name;
-        nh.getParam("video_name", video_name);
-        if(!cam.init(video_name, cameraMatrix, distCoeffs)){
-            std::cout << "ERROR! Unable to open Video: " << video_name << std::endl;
+        std::string video_file;
+        nh.getParam("video_file", video_file);
+        if(!cam.init(video_file, cameraMatrix, distCoeffs)){
+            std::cout << "ERROR! Unable to open Video: " << video_file << std::endl;
             return -1;
         }
     }
@@ -107,13 +116,25 @@ int main( int argc, char** argv ){
     cv::namedWindow("visual_localization", 0);
 
     // initialize the roi of tracking object
-    if(!cam.getNextRectifiedImage(image))
+    if(rectify)
     {
-        std::cout << "ERROR! failed to read image" << std::endl;
-        return -1;
+        if(!cam.getNextRectifiedImage(image))
+        {
+            std::cout << "ERROR! failed to read image" << std::endl;
+            return -1;
+        }
     }
+    else // do not rectify the image
+    {
+        if(!cam.getNextImage(image))
+        {
+            std::cout << "ERROR! failed to read image" << std::endl;
+            return -1;
+        }
+    }
+
     roi = BOOSTING::selectROI("visual_localization", image);
-    std::cout << "debug: 1" << std::endl;
+    //std::cout << "debug: 1" << std::endl;
 
     bool tracker_initialized = false;
     bool pause_tracker = false;
@@ -131,7 +152,13 @@ int main( int argc, char** argv ){
     std_msgs::Header header;
     while(ros::ok())
     {
-        if(cam.getNextRectifiedImage(image))
+        bool hasNewImage = false;
+        if(rectify)
+            hasNewImage = cam.getNextRectifiedImage(image);
+        else
+            hasNewImage = cam.getNextImage(image);
+
+        if(hasNewImage)
         {
             if(!pause_tracker)
             {
