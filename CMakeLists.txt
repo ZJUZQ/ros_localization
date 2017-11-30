@@ -8,7 +8,7 @@ project(ros_visual_localization)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
+  roscppjkooooiv
   rospy
   sensor_msgs
   std_msgs
@@ -125,8 +125,8 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
-include_directories( /home/vortex/3rdparty/include )
-link_directories( /home/vortex/3rdparty/lib )
+include_directories( $ENV{HOME}/3rdparty/include )
+link_directories( $ENV{HOME}/3rdparty/lib )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -159,7 +159,7 @@ add_dependencies(visual_localization ros_visual_localization_generate_messages_c
 target_link_libraries(visual_localization
     ${catkin_LIBRARIES}
 	${OpenCV_LIBS}
-	/home/vortex/3rdparty/lib/libBOOSTING.so )
+	$ENV{HOME}/3rdparty/lib/libBOOSTING.so )
 
 
 
