@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- SESSION ID: 1512062038 -->
+<!-- SESSION ID: 1512308957 -->
 <launch>
 
   <!-- Checkerboard parameters -->
@@ -16,7 +16,9 @@
 
   <arg name="rectify"   default="0" />
 
-  <arg name="rosRate"   default="5" />
+  <arg name="bgImage"   default="bg.png" />
+
+  <arg name="rosRate"   default="20" />
 
   <!-- Launching camera -->
   <node pkg="ros_visual_localization" type="visual_localization" name="usb_0" output="screen">
@@ -26,6 +28,7 @@
     <param name="camera_name"           value="$(arg camera_name)" />
     <param name="intrinsic"             value="$(find ros_visual_localization)/conf/$(arg intrinsic)" />
     <param name="rectify"             value="$(arg rectify)" />
+    <param name="bgImage"             value="$(find ros_visual_localization)/image/$(arg bgImage)" />
     <param name="rows"                  value="$(arg rows)" />
     <param name="cols"                  value="$(arg cols)" />
     <param name="cell_width"            value="$(arg cell_width)" />

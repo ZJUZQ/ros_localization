@@ -1,18 +1,23 @@
 #include <opencv2/opencv.hpp>
+#include <opencv2/xfeatures2d/nonfree.hpp>
 #include <iostream>
 #include <sstream>
 
 #include "BOOSTING/trackerAdaBoosting.hpp"
 #include "BOOSTING/roiSelector.hpp"
-#include "video_ucam_Cap.hpp" // for usb camera and video
+#include "ros_vl/video_ucam_Cap.hpp" // for usb camera and video
+#include "ros_vl/common_utility.hpp"
 
 #include <ros/ros.h>
 #include "ros_visual_localization/pose.h" // generated from msg/pose.msg
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
+#include <std_msgs/String.h>
 #include <cv_bridge/cv_bridge.h>
+#include <time.h>
+#include <stdio.h>
 
-using namespace std;
+using namespace std; 
 using namespace cv;
 
 /*
@@ -49,6 +54,18 @@ void publishImage( const std_msgs::Header &header,
                    const ros::Publisher &imagePub);
 void createHeader(std_msgs::Header& header);
 
+bool refresh_H = false;
+bool tracker_initialized = false;
+void actionCallback(const std_msgs::String::ConstPtr& msg){
+    if(msg->data.find("refresh_H")){ // refresh the H_to_bg
+        printf("\n Will refresh the H_to_bg !\n");
+        refresh_H = true;
+    }
+    if(msg->data.find("initialize_tracker")){
+        printf("\n Will reinitialize the tracker ! \n");
+        tracker_initialized = false;
+    }
+}
 
 int main( int argc, char** argv ){
     ros::init(argc, argv, "visual_localization");
@@ -64,7 +81,7 @@ int main( int argc, char** argv ){
     cv::Mat cameraMatrix, distCoeffs;
     int rectify = 1;
     nh.getParam("rectify", rectify);
-    std::cout << "debug: rectify = " << rectify << std::endl;
+    //std::cout << "debug: rectify = " << rectify << std::endl;
 
     if(rectify) // when read image, need to rectify the image
     {
@@ -111,11 +128,8 @@ int main( int argc, char** argv ){
         std::cout << "\nError in the instantiation of the tracker" << std::endl;
         return -1;
     }
-    cv::Mat image;
-    cv::Rect2d roi;
-    cv::namedWindow("visual_localization", 0);
 
-    // initialize the roi of tracking object
+    cv::Mat image;
     if(rectify)
     {
         if(!cam.getNextRectifiedImage(image))
@@ -133,16 +147,12 @@ int main( int argc, char** argv ){
         }
     }
 
-    roi = BOOSTING::selectROI("visual_localization", image);
-    //std::cout << "debug: 1" << std::endl;
-
-    bool tracker_initialized = false;
-    bool pause_tracker = false;
-
     std::string camera_name;
     nh.getParam("camera_name", camera_name);
     ros::Publisher posePub = nh.advertise<ros_visual_localization::pose>("pose_" + camera_name, 1);
     ros::Publisher imagePub = nh.advertise<sensor_msgs::Image>("image_" + camera_name, 1);
+    ros::Subscriber actionSub = nh.subscribe("action", 1, actionCallback);
+    //ros::Publisher imageCompressedPub = nh.advertise<sensor_msgs::CompressedImage>("image_" + camera_name, 1);
 
     int rosRate;
     nh.getParam("rosRate", rosRate);
@@ -150,28 +160,77 @@ int main( int argc, char** argv ){
 
     ros_visual_localization::pose pose_msg;
     std_msgs::Header header;
+
+    cv::namedWindow("visual_localization", 0);
+    std::string imgName_bg;
+    nh.getParam("bgImage", imgName_bg);
+    cv::Mat img_bg, img_bg_display;
+    img_bg = cv::imread(imgName_bg, cv::IMREAD_COLOR);
+    img_bg.copyTo(img_bg_display);
+    /*
+    printf("\ndebug: img's cols == %d", img_bg_display.cols);
+    printf("\ndebug: img's rows == %d", img_bg_display.rows);
+    printf("\ndebug: img's depth == %d", img_bg_display.depth());
+    */
+
+    cv::Ptr<cv::xfeatures2d::SURF> feature_detector = cv::xfeatures2d::SURF::create(400);
+    std::string detector_method = "SURF";
+
+    std::vector<cv::KeyPoint> kps_frame;
+    cv::Mat descriptors_frame;
+    feature_detector->detectAndCompute(image, cv::Mat(), kps_frame, descriptors_frame); // Detects keypoints and computes the descriptors 
+    
+    std::vector<cv::KeyPoint> kps_bg;
+    cv::Mat descriptors_bg;
+    feature_detector->detectAndCompute(img_bg_display, cv::Mat(), kps_bg, descriptors_bg);
+
+    cv::Mat H_to_bg, H_to_frame;
+    ros_vl::compute_homography(detector_method, H_to_frame, H_to_bg, kps_frame, kps_bg, descriptors_frame, descriptors_bg);
+    ros_vl::part_warpPerspective(image, img_bg_display, cv::Rect2d(0, 0, img_bg.cols, img_bg.rows), H_to_frame);
+
+    cv::Rect2d roi = BOOSTING::selectROI("visual_localization", img_bg_display);
+    cv::Rect2d bb_for_perspective =  ros_vl::enlargeRect(img_bg_display, roi, 3);
+    cv::destroyWindow("visual_localization");
+
+    bool pause_tracker = false;
+
     while(ros::ok())
     {
+        clock_t t = clock();
+        if(!tracker_initialized){   // reinitialize the tracker
+            if(!tracker->init(img_bg_display, roi))
+            {
+                std::cout << "\n Could not initialize the tracker... \n";
+                return -1;
+            }
+            tracker_initialized = true;
+        }
+    
         bool hasNewImage = false;
         if(rectify)
             hasNewImage = cam.getNextRectifiedImage(image);
         else
             hasNewImage = cam.getNextImage(image);
 
+        if(refresh_H){  // refresh the H_to_bg
+            kps_frame.clear();
+            feature_detector->detectAndCompute(image, cv::Mat(), kps_frame, descriptors_frame);
+            ros_vl::compute_homography(detector_method, H_to_frame, H_to_bg, kps_frame, kps_bg, descriptors_frame, descriptors_bg);
+        }
+
         if(hasNewImage)
         {
             if(!pause_tracker)
             {
-                if(!tracker_initialized){
-                    // initialize the tracker
-                    if(!tracker->init(image, roi))
-                    {
-                        std::cout << "\n Could not initialize the tracker... \n";
-                        return -1;
-                    }
-                    tracker_initialized = true;
-                }
-                if(updateROI(image, tracker, roi)){
+                
+                bb_for_perspective = ros_vl::enlargeRect(img_bg_display, roi, 3);
+                // perspective the image to the img_bg_display's ROI image: 
+                img_bg.copyTo(img_bg_display);
+                ros_vl::part_warpPerspective(image, img_bg_display, bb_for_perspective, H_to_frame);
+                cv::rectangle(img_bg_display, bb_for_perspective, cv::Scalar(0, 0, 255), 1, 1);
+
+                if(updateROI(img_bg_display, tracker, roi))
+                {
                     pose_msg.x = roi.x + roi.width / 2;
                     pose_msg.y = roi.y + roi.height / 2;
                     pose_msg.theta = 0;
@@ -179,9 +238,12 @@ int main( int argc, char** argv ){
                 }  
             }
             createHeader(header);
-            publishImage(header, image, imagePub);
-            cv::imshow("visual_localization", image);
+            publishImage(header, img_bg_display, imagePub);
+            //cv::imshow("visual_localization", img_bg_display);
         }
+        t = clock() - t;
+        printf("\n One frame consumes %.1f ms!\n", ((float)t)*1000/CLOCKS_PER_SEC);
+
         char c = (char)cv::waitKey(2);
         if(c == 'q')
             break;
@@ -196,28 +258,6 @@ int main( int argc, char** argv ){
     return 0;
 }
 
-/*
-bool getNextImage(cv::Mat &img, cv::VideoCapture &cap)
-{
-    cap.read(img);
-    if(img.empty())
-    {
-        std::cout << "\n blank image grabbed!\n";
-        return false;
-    }
-    return true;
-}
-
-bool getNextImage(cv::Mat &image, usbCamera::usbCamera ucam)
-{
-    if(!ucam.getNextImage(image)){
-        std::cout << "\n blank image grabbed!\n";
-        return false;
-    }
-    ucam.rectifyImage(image);
-    return true;
-}
-*/
 
 /*  update localizatin roi
 */

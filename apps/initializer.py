@@ -61,6 +61,7 @@ class Initializer :
     
       file.write('  <arg name="intrinsic"   default="' + camera['intrinsic'] + '" />\n\n') 
       file.write('  <arg name="rectify"   default="' + str(camera['rectify']) + '" />\n\n')
+      file.write('  <arg name="bgImage"   default="' + str(camera['bgImage']) + '" />\n\n')
       file.write('  <arg name="rosRate"   default="' + str(rosRate) + '" />\n\n') 
 
       file.write('  <!-- Launching camera -->\n')
@@ -81,6 +82,7 @@ class Initializer :
 
       file.write('    <param name="intrinsic"             value="$(find ros_visual_localization)/conf/$(arg intrinsic)" />\n')
       file.write('    <param name="rectify"             value="$(arg rectify)" />\n')
+      file.write('    <param name="bgImage"             value="$(find ros_visual_localization)/image/$(arg bgImage)" />\n')
 
       file.write('    <param name="rows"                  value="$(arg rows)" />\n')
       file.write('    <param name="cols"                  value="$(arg cols)" />\n')

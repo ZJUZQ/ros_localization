@@ -5,12 +5,14 @@ cameras:
     device: 1
     intrinsic: "usb_0_intrinsic.xml"
     rectify: 0 # whether rectify the image
+    bgImage: "bg.png" # the background image, placed under /image/
 
   - type: "video"
     id: "video_0"
     vfile: "climber.wmv" # put the video in /video/
     intrinsic: "video_0_intrinsic.xml" 
     rectify: 0 # whether rectify the image
+    bgImage: "bg.png" # the background image, placed under /image/
 
 # Checkerboard parameters
 checkerboard:
@@ -19,4 +21,4 @@ checkerboard:
   cell_width: 0.082
   cell_height: 0.082
 
-rosRate: 5 # rate for posePub and imagePub
+rosRate: 20 # rate for posePub and imagePub

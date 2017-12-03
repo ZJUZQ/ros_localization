@@ -8,7 +8,7 @@ project(ros_visual_localization)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  roscppjkooooiv
+  roscpp
   rospy
   sensor_msgs
   std_msgs
@@ -129,9 +129,12 @@ include_directories( $ENV{HOME}/3rdparty/include )
 link_directories( $ENV{HOME}/3rdparty/lib )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/ros_visual_localization.cpp
-# )
+add_library(ros_vl
+  src/common_utility.cpp
+)
+target_link_libraries(ros_vl 
+  ${OpenCV_LIBS}
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -157,9 +160,11 @@ add_dependencies(visual_localization ros_visual_localization_generate_messages_c
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(visual_localization
-    ${catkin_LIBRARIES}
+  ${catkin_LIBRARIES}
 	${OpenCV_LIBS}
-	$ENV{HOME}/3rdparty/lib/libBOOSTING.so )
+	$ENV{HOME}/3rdparty/lib/libBOOSTING.so
+  ros_vl
+)
 
 
 
