@@ -22,7 +22,6 @@ class Initializer :
       #self.camera_list = self.camera_list + [item]
       session_id = rospy.Time.now().secs
 
-      print 'debug'
       print camera['id']
 
       ############# write: launch/camera_xx.launch ##############
