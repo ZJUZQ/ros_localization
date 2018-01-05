@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- SESSION ID: 1512896020 -->
+<!-- SESSION ID: 1514515028 -->
 <launch>
 
   <!-- Checkerboard parameters -->
@@ -10,6 +10,7 @@
 
   <!-- Camera parameters -->
   <arg name="camera_name"     default="usb_0" />
+  <arg name="serialPortName"     default="ttyUSB0" />
   <arg name="camera_device"   default="1" />
 
   <arg name="intrinsic"   default="usb_0_intrinsic.xml" />
@@ -35,6 +36,8 @@
     <param name="cell_height"           value="$(arg cell_height)" />
 
     <param name="rosRate"           value="$(arg rosRate)" />
+
+    <param name="serialPortName"           value="$(arg serialPortName)" />
 
   </node>
 

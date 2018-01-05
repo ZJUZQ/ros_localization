@@ -6,6 +6,7 @@ cameras:
     intrinsic: "usb_0_intrinsic.xml"
     rectify: 0 # whether rectify the image
     bgImage: "bg.png" # the background image, placed under /image/
+    serialPortName: "ttyUSB0" # use cutecom to debug the serial port
 
   - type: "video"
     id: "video_0"
@@ -13,6 +14,7 @@ cameras:
     intrinsic: "video_0_intrinsic.xml" 
     rectify: 0 # whether rectify the image
     bgImage: "bg.png" # the background image, placed under /image/
+    serialPortName: "ttyUSB0" # use cutecom to debug the serial port
 
 # Checkerboard parameters
 checkerboard:

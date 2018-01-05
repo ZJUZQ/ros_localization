@@ -6,6 +6,16 @@ cd ~/BOOSTING_lib
 chmod +x build.sh
 ./build.sh
 
+cd ~
+git clone https://github.com/ZQ2QQ/boost_1_66_0_copy.git
+cd ~/boost_1_66_0_copy
+chmod +x *.sh
+if[ ! -d ~/3rdparty/boost_1_66_0 ]
+    mkdir -p ~/3rdparty/boost_1_66_0
+fi
+./booststrap.sh --prefix=${HOME}/3rdparty/boost_1_66_0
+./b2 install
+
 mkdir -p ~/workspace/ros/catkin/src
 cd ~/workspace/ros/catkin
 catkin_make --force-cmake

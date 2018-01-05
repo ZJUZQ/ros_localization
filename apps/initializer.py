@@ -41,6 +41,8 @@ class Initializer :
       file.write('  <!-- Camera parameters -->\n')
       file.write('  <arg name="camera_name"     default="' + camera['id'] + '" />\n')
 
+      file.write('  <arg name="serialPortName"     default="' + camera['serialPortName'] + '" />\n')
+
       #if camera['type'] == 'ip': # for ip camera  
       #  if camera['ip'] == '':
       #    file.close()
@@ -88,6 +90,7 @@ class Initializer :
       file.write('    <param name="cell_width"            value="$(arg cell_width)" />\n')
       file.write('    <param name="cell_height"           value="$(arg cell_height)" />\n\n')
       file.write('    <param name="rosRate"           value="$(arg rosRate)" />\n\n')
+      file.write('    <param name="serialPortName"           value="$(arg serialPortName)" />\n\n')
 
 
       file.write('  </node>\n\n')

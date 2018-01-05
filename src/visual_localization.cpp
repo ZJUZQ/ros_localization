@@ -16,6 +16,8 @@
 #include <cv_bridge/cv_bridge.h>
 #include <time.h>
 #include <stdio.h>
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
 
 using namespace std; 
 using namespace cv;
@@ -77,6 +79,22 @@ int main( int argc, char** argv ){
         return 0;
     }
     */
+    boost::asio::io_service ioService;
+    std::string serialPortName;
+    nh.getParam("serialPortName", serialPortName);
+    serialPortName = "/dev/" + serialPortName;
+    std::cout << "debug: serialPortName = \n" << serialPortName << std::endl;
+    boost::asio::serial_port sPort(ioService, serialPortName);
+    //boost::asio::serial_port sPort(ioService, "/dev/ttyUSB0");
+    // set post's parameter
+    sPort.set_option( boost::asio::serial_port::baud_rate(9600) );
+    sPort.set_option( boost::asio::serial_port::flow_control(boost::asio::serial_port::flow_control::none) );
+    sPort.set_option( boost::asio::serial_port::parity(boost::asio::serial_port::parity::odd) );
+    sPort.set_option( boost::asio::serial_port::stop_bits(boost::asio::serial_port::stop_bits::one) );
+    sPort.set_option( boost::asio::serial_port::character_size(8) );
+
+
+
     std::string intrinsic_file;
     cv::Mat cameraMatrix, distCoeffs;
     int rectify = 1;
@@ -234,11 +252,21 @@ int main( int argc, char** argv ){
                     pose_msg.x = roi.x + roi.width / 2;
                     pose_msg.y = roi.y + roi.height / 2;
                     pose_msg.theta = 0;
+                    pose_msg.camera_name.data = camera_name;
                     posePub.publish(pose_msg);
+
+                    char buffers[25];
+                    sprintf(buffers, "x%7.1f", double(pose_msg.x));
+                    sprintf(buffers + 8, "y%7.1f", double(pose_msg.y));
+                    sprintf(buffers + 16, "t%7.1f", double(pose_msg.theta));
+                    buffers[24] = '\n';
+
+                    boost::asio::write(sPort, boost::asio::buffer(buffers) );
                 }  
             }
-            createHeader(header);
-            publishImage(header, img_bg_display, imagePub);
+            //createHeader(header);
+            //publishImage(header, img_bg_display, imagePub);
+            
             //cv::imshow("visual_localization", img_bg_display);
         }
         t = clock() - t;
@@ -257,7 +285,6 @@ int main( int argc, char** argv ){
     cv::destroyAllWindows();
     return 0;
 }
-
 
 /*  update localizatin roi
 */
