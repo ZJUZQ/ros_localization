@@ -264,8 +264,8 @@ int main( int argc, char** argv ){
                     boost::asio::write(sPort, boost::asio::buffer(buffers) );
                 }  
             }
-            //createHeader(header);
-            //publishImage(header, img_bg_display, imagePub);
+            createHeader(header);
+            publishImage(header, img_bg_display, imagePub);
             
             //cv::imshow("visual_localization", img_bg_display);
         }
