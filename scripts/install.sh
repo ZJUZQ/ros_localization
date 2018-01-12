@@ -13,7 +13,7 @@ chmod +x *.sh
 if[ ! -d ~/3rdparty/boost_1_66_0 ]
     mkdir -p ~/3rdparty/boost_1_66_0
 fi
-./booststrap.sh --prefix=${HOME}/3rdparty/boost_1_66_0
+./bootstrap.sh --prefix=${HOME}/3rdparty/boost_1_66_0
 ./b2 install
 
 mkdir -p ~/workspace/ros/catkin/src
